@@ -135,7 +135,7 @@ module.exports = {
     } else if (options.groups) {
       return util.format(options.output, compound.groupname);
     } else if (options.classes) {
-      return util.format(options.output, compound.name.replace(/\:/g, '-'));
+      return util.format(options.output, compound.name.replace(/\:/g, '-').replace(/\./g, '-').toLowerCase());
     } else {
       return options.output;
     }
