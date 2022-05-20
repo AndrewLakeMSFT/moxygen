@@ -56,7 +56,13 @@ function toMarkdown(element, context) {
             break;
 
           case 'parameteritem': s = '* '; break;
-          case 'programlisting': s = '\n```cpp\n'; break;
+          case 'programlisting':
+            // Get the language information from filename
+            var lang = '';
+            if (typeof(element.$) !== 'undefined')
+              lang = element.$.filename.substring(element.$.filename.lastIndexOf('.') + 1);
+            s = '\n```' + lang + '\n';
+            break;
           case 'orderedlist':
             context.push(element);
             s = '\n\n';
@@ -280,7 +286,8 @@ module.exports = {
         m = m.concat('(');
         if (memberdef.param) {
           memberdef.param.forEach(function (param, argn) {
-            m = m.concat(argn == 0 ? [] : ',');
+            // Add space between arguments
+            m = m.concat(argn == 0 ? [] : ', ');
             m = m.concat([toMarkdown(param.type)]);
             m = m.concat(param.declname ? [' ', toMarkdown(param.declname)] : []);
           });
