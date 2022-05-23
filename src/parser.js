@@ -17,6 +17,7 @@ var markdown = require('./markdown');
 
 var graphCounter = 1;
 var isCodeLine = false;
+var isMarkdownLink = false;
 
 function toMarkdown(element, context) {
   var s = '';
@@ -44,8 +45,15 @@ function toMarkdown(element, context) {
           case '__text__': s = element._; break;
           case 'emphasis': s = '*'; break;
           case 'bold': s = '**'; break;
-          case 'parametername':
-          case 'computeroutput': s = '`'; break;
+          case 'parametername': s = '`'; break;
+          case 'computeroutput':
+            // Undo '`' for markdown links such as `[ICoreWebView2](icorewebview2.md)`
+            if (element.$$ && Array.isArray(element.$$) && element.$$[0]['#name'] == 'ref') {
+              isMarkdownLink = true;
+            } else {
+              s = '`';
+            }
+            break;
           case 'parameterlist':
             if (element.$.kind == 'exception') {
               s = '\n#### Exceptions\n'
@@ -56,7 +64,13 @@ function toMarkdown(element, context) {
             break;
 
           case 'parameteritem': s = '* '; break;
-          case 'programlisting': s = '\n```cpp\n'; break;
+          case 'programlisting':
+            // Get the language information from filename
+            var lang = '';
+            if (typeof(element.$) !== 'undefined')
+              lang = element.$.filename.substring(element.$.filename.lastIndexOf('.') + 1);
+            s = '\n```' + lang + '\n';
+            break;
           case 'orderedlist':
             context.push(element);
             s = '\n\n';
@@ -142,7 +156,12 @@ function toMarkdown(element, context) {
           case 'emphasis': s += '*'; break;
           case 'bold': s += '**'; break;
           case 'parameteritem': s += '\n'; break;
-          case "computeroutput": s += '`'; break;
+          case "computeroutput":
+            if (!isMarkdownLink) {
+              s += '`';
+            }
+            isMarkdownLink = false;
+            break;
           case 'parametername': s += '` '; break;
           case 'entry': s = markdown.escape.cell(s) + '|'; break;
           case 'programlisting': s += '```\n'; break;
@@ -150,7 +169,12 @@ function toMarkdown(element, context) {
             isCodeLine = false;
             s += '\n'; 
             break;
-          case 'ulink': s = markdown.link(s, element.$.url); break;
+          // Don't create markdown link for url text
+          case 'ulink':
+            if (s !== element.$.url) {
+              s = markdown.link(s, element.$.url);
+            }
+            break;
           case 'orderedlist':
             context.pop();
             s += '\n';
@@ -280,7 +304,8 @@ module.exports = {
         m = m.concat('(');
         if (memberdef.param) {
           memberdef.param.forEach(function (param, argn) {
-            m = m.concat(argn == 0 ? [] : ',');
+            // Add space between arguments
+            m = m.concat(argn == 0 ? [] : ', ');
             m = m.concat([toMarkdown(param.type)]);
             m = m.concat(param.declname ? [' ', toMarkdown(param.declname)] : []);
           });
