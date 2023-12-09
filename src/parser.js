@@ -126,6 +126,7 @@ function toMarkdown(element, context) {
           case 'entry':
           case 'row':
           case 'ulink':
+            break;
           case 'codeline':
             isCodeLine = true;
             break;
